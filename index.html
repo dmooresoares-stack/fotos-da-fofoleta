@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#21152b">
+  <title>Fotos da Fofoleta ❤️</title>
+  <style>
+    :root{color-scheme:dark;--bg:#15111a;--panel:#211a28;--pink:#f0a7d2;--muted:#c6b8c9}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#36213b,#15111a 55%);color:#fff;font:16px system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+    .wrap{max-width:1150px;margin:auto;padding:32px 18px 60px}header{text-align:center;padding:16px 0 28px}
+    h1{font:clamp(2rem,6vw,3.7rem) Georgia,serif;margin:0;color:#ffe4f4}header p{color:var(--muted);margin:.65rem 0 0}
+    .count{text-align:center;color:var(--pink);font-weight:700;margin:12px 0 22px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px}
+    .tile{position:relative;border:1px solid #ffffff20;border-radius:14px;overflow:hidden;background:var(--panel);padding:0;cursor:pointer;aspect-ratio:1/1}
+    .tile img,.tile video{width:100%;height:100%;display:block;object-fit:cover}.tile:hover{outline:2px solid var(--pink)}.tile .tag{position:absolute;bottom:7px;left:7px;background:#100cbaad;border-radius:20px;padding:3px 9px;font-size:12px}
+    .status{text-align:center;color:var(--muted);padding:36px}.modal{position:fixed;inset:0;z-index:5;background:#09070dee;display:none;align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}
+    .modal img,.modal video{max-width:96vw;max-height:88vh;object-fit:contain;border-radius:8px}.close{position:absolute;top:15px;right:18px;color:white;background:#31233a;border:0;border-radius:999px;width:44px;height:44px;font-size:24px;cursor:pointer}
+    footer{text-align:center;color:#9f92a2;font-size:.85rem;margin-top:30px}@media(max-width:420px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.wrap{padding-left:12px;padding-right:12px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header><h1>Fotos da Fofoleta ❤️</h1><p>Nosso cantinho de fotos, reunidas em um só lugar.</p></header>
+    <div class="count" id="count">Carregando fotos…</div>
+    <div id="gallery" class="grid"></div><div class="status" id="status" aria-live="polite"></div>
+    <footer>Toque em uma foto para ampliar.</footer>
+  </main>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Mídia ampliada">
+    <button class="close" id="close" aria-label="Fechar">×</button><img id="large" alt=""><video id="largeVideo" controls playsinline></video>
+  </div>
+  <script>
+    const owner='dmooresoares-stack', repo='fotos-da-fofoleta';
+    const gallery=document.getElementById('gallery'), status=document.getElementById('status'), count=document.getElementById('count');
+    const modal=document.getElementById('modal'), large=document.getElementById('large'), largeVideo=document.getElementById('largeVideo');
+    function close(){modal.classList.remove('open');large.src='';largeVideo.pause();largeVideo.removeAttribute('src');largeVideo.load()}
+    document.getElementById('close').onclick=close;modal.onclick=e=>{if(e.target===modal)close()};document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+    fetch(`https://api.github.com/repos/${owner}/${repo}/contents?ref=main`)
+      .then(r=>{if(!r.ok)throw Error('Não foi possível carregar as fotos.');return r.json()})
+      .then(files=>{
+        const media=files.filter(f=>f.type==='file'&&/\.(jpe?g|png|webp|gif|mp4|webm|mov)$/i.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+        const photos=media.filter(f=>/\.(jpe?g|png|webp|gif)$/i.test(f.name)).length;
+        count.textContent=`${photos} fotos${media.length>photos?` e ${media.length-photos} vídeo`:''}`;
+        media.forEach((f,i)=>{
+          const url=`https://raw.githubusercontent.com/${owner}/${repo}/main/${encodeURIComponent(f.name)}`;
+          const isVideo=/\.(mp4|webm|mov)$/i.test(f.name), b=document.createElement('button');b.className='tile';b.setAttribute('aria-label',`${isVideo?'Abrir vídeo':'Ampliar foto'} ${i+1}`);
+          const el=document.createElement(isVideo?'video':'img');el.src=url;el.loading='lazy';el.muted=true;el.playsInline=true;el.alt=isVideo?'Vídeo da galeria':`Foto ${i+1}`;b.append(el);
+          if(isVideo){const tag=document.createElement('span');tag.className='tag';tag.textContent='Vídeo';b.append(tag)}
+          b.onclick=()=>{if(isVideo){large.style.display='none';largeVideo.style.display='block';largeVideo.src=url;largeVideo.play()}else{largeVideo.style.display='none';large.style.display='block';large.src=url;large.alt=el.alt}modal.classList.add('open')};gallery.append(b);
+        });
+        if(!media.length)status.textContent='Nenhuma foto encontrada.';
+      }).catch(e=>{count.textContent='';status.textContent=e.message});
+  </script>
+</body>
+</html>
